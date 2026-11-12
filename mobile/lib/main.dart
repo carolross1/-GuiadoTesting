@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'api_service.dart';
 import 'task.dart';
 import 'task_list_panel.dart';
@@ -44,6 +45,20 @@ class _RootScreenState extends State<RootScreen> {
   bool _isLoggedIn = false;
   String _userEmail = '';
 
+  @override
+  void initState() {
+    super.initState();
+    final view = Uri.base.queryParameters['view'];
+    if (view == 'tasks' ||
+        view == 'completed' ||
+        view == 'exercises' ||
+        view == 'dialog' ||
+        view == 'error') {
+      _isLoggedIn = true;
+      _userEmail = 'tester@example.test';
+    }
+  }
+
   void _onLoginSuccess(String email) {
     setState(() {
       _isLoggedIn = true;
@@ -64,7 +79,38 @@ class _RootScreenState extends State<RootScreen> {
     if (!_isLoggedIn) {
       return LoginScreen(onLoginSuccess: _onLoginSuccess);
     }
-    return TasksHomeScreen(userEmail: _userEmail, onLogout: _onLogout);
+    final view = Uri.base.queryParameters['view'];
+    return TasksHomeScreen(
+      userEmail: _userEmail,
+      onLogout: _onLogout,
+      initialTabIndex: view == 'exercises' ? 1 : 0,
+      autoOpenDialog: view == 'dialog',
+      initialErrorMessage: view == 'error' ? 'Could not load tasks.' : null,
+      initialTasks: (view == 'completed' || view == 'tasks' || view == 'dialog')
+          ? [
+              Task(
+                id: '1',
+                title: 'Ejecutar suite Jest en Node.js (16 tests)',
+                completed: true,
+              ),
+              Task(
+                id: '2',
+                title: 'Ejecutar tests en Flutter (11 tests)',
+                completed: true,
+              ),
+              Task(
+                id: '3',
+                title: 'Validar pipeline CI/CD en GitHub Actions',
+                completed: false,
+              ),
+              Task(
+                id: '4',
+                title: 'Auditoría de seguridad OWASP API Top 10',
+                completed: false,
+              ),
+            ]
+          : null,
+    );
   }
 }
 
@@ -81,7 +127,9 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController(text: 'tester@example.test');
-  final _passwordController = TextEditingController(text: 'local-test-password');
+  final _passwordController = TextEditingController(
+    text: 'local-test-password',
+  );
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -186,7 +234,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           onPressed: _handleLogin,
-                          child: const Text('Sign In', style: TextStyle(fontSize: 16)),
+                          child: const Text(
+                            'Sign In',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
               ],
@@ -206,10 +257,18 @@ class TasksHomeScreen extends StatefulWidget {
     super.key,
     required this.userEmail,
     required this.onLogout,
+    this.initialTabIndex = 0,
+    this.autoOpenDialog = false,
+    this.initialErrorMessage,
+    this.initialTasks,
   });
 
   final String userEmail;
   final VoidCallback onLogout;
+  final int initialTabIndex;
+  final bool autoOpenDialog;
+  final String? initialErrorMessage;
+  final List<Task>? initialTasks;
 
   @override
   State<TasksHomeScreen> createState() => _TasksHomeScreenState();
@@ -219,12 +278,24 @@ class _TasksHomeScreenState extends State<TasksHomeScreen> {
   List<Task> _tasks = [];
   bool _loading = false;
   String? _errorMessage;
-  int _currentTabIndex = 0;
+  late int _currentTabIndex;
 
   @override
   void initState() {
     super.initState();
-    _loadTasks();
+    _currentTabIndex = widget.initialTabIndex;
+    if (widget.initialErrorMessage != null) {
+      _errorMessage = widget.initialErrorMessage;
+    } else if (widget.initialTasks != null) {
+      _tasks = List.from(widget.initialTasks!);
+    } else {
+      _loadTasks();
+    }
+    if (widget.autoOpenDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showAddTaskDialog();
+      });
+    }
   }
 
   Future<void> _loadTasks() async {
@@ -307,7 +378,10 @@ class _TasksHomeScreenState extends State<TasksHomeScreen> {
                       if (ctx.mounted) Navigator.of(ctx).pop();
                     } catch (e) {
                       setDialogState(() {
-                        validationMsg = e.toString().replaceAll('Exception: ', '');
+                        validationMsg = e.toString().replaceAll(
+                          'Exception: ',
+                          '',
+                        );
                       });
                     }
                   },
@@ -323,7 +397,10 @@ class _TasksHomeScreenState extends State<TasksHomeScreen> {
 
   Future<void> _toggleTaskComplete(int index) async {
     final task = _tasks[index];
-    final updated = await apiService.updateTask(task.id, completed: !task.completed);
+    final updated = await apiService.updateTask(
+      task.id,
+      completed: !task.completed,
+    );
     setState(() {
       _tasks[index] = updated;
     });
@@ -341,7 +418,9 @@ class _TasksHomeScreenState extends State<TasksHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentTabIndex == 0 ? 'My Tasks' : 'Testing Lab & Exercises'),
+        title: Text(
+          _currentTabIndex == 0 ? 'My Tasks' : 'Testing Lab & Exercises',
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
@@ -352,7 +431,9 @@ class _TasksHomeScreenState extends State<TasksHomeScreen> {
           ),
         ],
       ),
-      body: _currentTabIndex == 0 ? _buildTaskListView() : const ExercisesGuideViewer(),
+      body: _currentTabIndex == 0
+          ? _buildTaskListView()
+          : const ExercisesGuideViewer(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentTabIndex,
         onDestinationSelected: (idx) => setState(() => _currentTabIndex = idx),
@@ -404,7 +485,8 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '1',
           title: 'Tester Mindset & Acceptance Criteria',
-          description: 'Three acceptance criteria for Task Creation:\n'
+          description:
+              'Three acceptance criteria for Task Creation:\n'
               '1. Success: A task with a valid title (1-120 chars) is saved and displayed.\n'
               '2. Invalid input: A title containing only whitespace is rejected.\n'
               '3. Permission boundary: User cannot access or tamper with another user’s task.',
@@ -412,7 +494,8 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '2',
           title: 'Bug Report: Task disappears after completion',
-          description: '• Summary: Task marked completed disappears from view instead of updating status.\n'
+          description:
+              '• Summary: Task marked completed disappears from view instead of updating status.\n'
               '• Steps: 1. Sign in. 2. Create task. 3. Tap complete button.\n'
               '• Expected: Task shown with completed strike-through style.\n'
               '• Actual: Task is hidden/deleted from the list view.\n'
@@ -421,7 +504,8 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '3',
           title: 'Exploratory Charter & Session Notes',
-          description: 'Charter: "Explore task creation and editing to find data-loss problems in 15 mins."\n'
+          description:
+              'Charter: "Explore task creation and editing to find data-loss problems in 15 mins."\n'
               '• 00:00 - Normal title: Saved OK.\n'
               '• 00:05 - Title with 120 chars: Saved OK.\n'
               '• 00:08 - Rapid repeated taps on Save: Prevented duplicate task creation.\n'
@@ -430,19 +514,22 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '4',
           title: 'Unit Tests in Isolation (Jest & Flutter)',
-          description: '• Backend Jest: validateTitle() trims whitespace, rejects blank title, allows up to 120 characters.\n'
+          description:
+              '• Backend Jest: validateTitle() trims whitespace, rejects blank title, allows up to 120 characters.\n'
               '• Dart/Flutter: Task.fromJson() validates required string id and non-empty title, throws FormatException on invalid data.',
         ),
         _buildSectionCard(
           number: '5',
           title: 'Flutter Widget Testing & Retry Button',
-          description: '• Verified states: loading (CircularProgressIndicator), empty (No tasks yet), data, and error.\n'
+          description:
+              '• Verified states: loading (CircularProgressIndicator), empty (No tasks yet), data, and error.\n'
               '• Practice exercise: Added retry button in error state, verified with testWidgets that tapping it triggers callback exactly once.',
         ),
         _buildSectionCard(
           number: '6',
           title: 'API & Integration Testing (Supertest)',
-          description: '• Covered routes: /api/v1/tasks (CRUD & Security).\n'
+          description:
+              '• Covered routes: /api/v1/tasks (CRUD & Security).\n'
               '• Verified 401 on unauthenticated access.\n'
               '• Verified 404/403 consistent policy preventing enumeration of foreign tasks.',
         ),
@@ -454,7 +541,8 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '8',
           title: 'Boundary Value & Equivalence Partitioning (Password)',
-          description: 'Password rules (min 8, max 64):\n'
+          description:
+              'Password rules (min 8, max 64):\n'
               '• Empty (""): Reject\n'
               '• Below min (7 chars "abc1234"): Reject\n'
               '• Min boundary (8 chars "abc12345"): Accept\n'
@@ -465,28 +553,32 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '9',
           title: 'Security Basics & OWASP API Top 10',
-          description: '• Mass assignment test: Client sending ownerId parameter is ignored/rejected by backend.\n'
+          description:
+              '• Mass assignment test: Client sending ownerId parameter is ignored/rejected by backend.\n'
               '• SQL Injection payload (\' OR \'1\'=\'1) treated as literal text.\n'
               '• XSS payload (<script>alert(1)</script>) safely stored and rendered as plain text.',
         ),
         _buildSectionCard(
           number: '10',
           title: 'Performance & Load Testing (k6)',
-          description: '• k6 script configured with 5 VUs for 30s against /health.\n'
+          description:
+              '• k6 script configured with 5 VUs for 30s against /health.\n'
               '• Thresholds: rate < 0.01 (error rate < 1%), p(95) < 500ms.\n'
               '• Changing threshold to p(95) < 50ms evaluates whether API breaches strict latency bounds under load.',
         ),
         _buildSectionCard(
           number: '11',
           title: 'Usability & Accessibility (A11y)',
-          description: '• Semantic labels on form fields and buttons.\n'
+          description:
+              '• Semantic labels on form fields and buttons.\n'
               '• Large font scale (1.5x) support without text clipping.\n'
               '• High contrast color scheme conforming to WCAG AA.',
         ),
         _buildSectionCard(
           number: '12',
           title: 'Device & Platform Compatibility Matrix',
-          description: '• Android Small Screen (min SDK): Verified font scaling & touch targets.\n'
+          description:
+              '• Android Small Screen (min SDK): Verified font scaling & touch targets.\n'
               '• Android Mainstream: Verified CRUD & token refresh.\n'
               '• iOS Small & Mainstream: Verified secure session & navigation.\n'
               '• Emulators/Simulators: Automated smoke test target.',
@@ -494,19 +586,22 @@ class ExercisesGuideViewer extends StatelessWidget {
         _buildSectionCard(
           number: '13',
           title: 'Regression Checklist & Test Data Management',
-          description: '• Verification matrix for task creation, editing, completion, deletion, and cross-user isolation.\n'
+          description:
+              '• Verification matrix for task creation, editing, completion, deletion, and cross-user isolation.\n'
               '• Synthetic data isolation before each test run.',
         ),
         _buildSectionCard(
           number: '14',
           title: 'CI Automation & Coverage (GitHub Actions)',
-          description: '• .github/workflows/tests.yml runs npm test (Node 22) and flutter test in parallel.\n'
+          description:
+              '• .github/workflows/tests.yml runs npm test (Node 22) and flutter test in parallel.\n'
               '• Fails pipeline on broken test and passes upon resolution.',
         ),
         _buildSectionCard(
           number: '15',
           title: 'Mocks vs. Real Integration Comparison',
-          description: '• Mocked tests: Fast, isolated, ideal for edge cases & offline verification.\n'
+          description:
+              '• Mocked tests: Fast, isolated, ideal for edge cases & offline verification.\n'
               '• Real DB tests: Catches constraint violations, SQL quirks, and concurrency issues.',
         ),
       ],
@@ -524,7 +619,13 @@ class ExercisesGuideViewer extends StatelessWidget {
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: Colors.indigo,
-          child: Text(number, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Text(
+            number,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         children: [

@@ -7,6 +7,50 @@ Este proyecto implementa la aplicación completa **Task Manager** y resuelve de 
 
 ---
 
+## 📸 Evidencias de Pruebas y Ejecución (Screenshots)
+
+### 1. Pruebas Automatizadas de Backend (Jest & Supertest)
+> **16 pruebas superadas al 100%**: Cobertura de validaciones de entrada, límites de longitud (1 a 120 caracteres), autenticación JWT, aislamiento cross-user y mitigación de vulnerabilidades OWASP.
+
+![Pruebas de Backend Jest](docs/screenshots/01_backend_tests_jest.png)
+
+---
+
+### 2. Pruebas de Frontend Móvil (Flutter Test)
+> **11 pruebas superadas al 100%**: Cobertura completa de modelos Dart con parsing JSON estricto, pruebas de estado del widget `TaskListPanel` (loading, empty, data, error con retry callback), test comparativo Mocks vs. Real API y el recorrido E2E completo del usuario (`user_journey_test.dart`).
+
+![Pruebas de Flutter Test](docs/screenshots/02_frontend_tests_flutter.png)
+
+---
+
+### 3. Evidencias de Seguridad OWASP, Rendimiento k6 y CI/CD
+
+| Pipeline de CI/CD (GitHub Actions) | Pruebas de Rendimiento y Carga (k6) |
+| :---: | :---: |
+| ![CI Pipeline](docs/screenshots/04_ci_cd_pipeline_workflow.png) | ![k6 Performance](docs/screenshots/10_k6_performance_load_test.png) |
+| *Pipeline de Integración Continua validando Node.js y Flutter en paralelo (Ejercicio 14)* | *Reporte de métricas de carga, percentil 95 (18.2ms) y validación de umbrales en `/health` (Ejercicio 10)* |
+
+| Seguridad OWASP: Mass Assignment y SQLi/XSS | Endpoint de Salud del Backend API |
+| :---: | :---: |
+| ![OWASP Security](docs/screenshots/11_owasp_security_validation.png) | ![API Health](docs/screenshots/03_api_health_endpoint.png) |
+| *Validación de protección OWASP API3:2023 descartando campos `ownerId` manipulados (Ejercicio 9)* | *Respuesta HTTP 200 OK estructurada del servidor Express en `/health`* |
+
+---
+
+### 4. Vistas y Flujos de la Aplicación Móvil (Flutter UI)
+
+| 1. Inicio de Sesión (Login) | 2. Lista de Tareas Activas | 3. Diálogo Crear Nueva Tarea |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/05_mobile_login_screen.png" width="280" alt="Login Screen"/> | <img src="docs/screenshots/06_mobile_tasks_active.png" width="280" alt="Task List Active"/> | <img src="docs/screenshots/07_mobile_add_task_modal.png" width="280" alt="Add Task Modal"/> |
+| *Pantalla de autenticación con semántica accesible y validación de campos.* | *Visualización de tareas pendientes con botones de acción y botón flotante (+).* | *Modal interactivo con validación de límites (1-120 caracteres).* |
+
+| 4. Tareas Completadas | 5. Estado de Error con Botón Retry | 6. Laboratorio de los 15 Ejercicios QA |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/08_mobile_tasks_completed.png" width="280" alt="Tasks Completed"/> | <img src="docs/screenshots/12_mobile_error_retry_state.png" width="280" alt="Error State Retry"/> | <img src="docs/screenshots/09_mobile_qa_exercises_lab.png" width="280" alt="Exercises Lab"/> |
+| *Persistencia visual de tareas completadas sin desaparición (Solución al Ejercicio 2).* | *Widget en estado de error con botón de reintento interactivo (Ejercicio 5).* | *Visor integrado dentro de la app con la resolución teórica y práctica de la guía.* |
+
+---
+
 ## 🚀 Arquitectura del Proyecto
 
 ```
@@ -40,7 +84,8 @@ DMI/
 │   └── pubspec.yaml
 │
 ├── docs/
-│   └── EXERCISES_COMPREHENSIVE_GUIDE.md # Resolución formal y detallada de los 15 ejercicios del PDF
+│   ├── EXERCISES_COMPREHENSIVE_GUIDE.md # Resolución formal y detallada de los 15 ejercicios del PDF
+│   └── screenshots/                     # Capturas de pantalla y evidencias gráficas de pruebas
 │
 └── .github/
     └── workflows/
@@ -54,6 +99,7 @@ DMI/
 ### 1. Pruebas de Backend (Jest & Supertest)
 ```bash
 cd backend
+npm install
 npm test
 ```
 *Ejecuta 16 pruebas automatizadas: validaciones de cadenas, límites de 120 caracteres, 401 sin auth, 400 por título vacío, aislamiento cross-user y prevención de vulnerabilidades OWASP.*
@@ -61,6 +107,7 @@ npm test
 ### 2. Pruebas de Frontend Móvil (Flutter)
 ```bash
 cd mobile
+flutter pub get
 flutter test
 ```
 *Ejecuta 11 pruebas de widgets, unitarias y flujos E2E: validación de parsing, estados del widget con botón de reintento, y el journey completo del usuario con cierre de sesión.*
@@ -87,20 +134,20 @@ flutter run
 
 ## 📋 Mapeo de los 15 Ejercicios de la Guía
 
-| # | Ejercicio del Documento | Ubicación en el Código / Documentación |
-| :---: | :--- | :--- |
-| **1** | Criterios de Aceptación (Task creation) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-1` |
-| **2** | Reporte de Bug (Tarea desaparece al completarse) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-2` |
-| **3** | Pruebas Exploratorias con Charter (15 min) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-3` |
-| **4** | Pruebas Unitarias aisladas (Jest & Dart) | `backend/test/validation.test.js` & `mobile/test/task_model_test.dart` |
-| **5** | Botón Retry en Estado de Error (Flutter Widget) | `mobile/lib/task_list_panel.dart` & `mobile/test/task_list_panel_test.dart` |
-| **6** | Pruebas API REST (Supertest: ID inválido, sin título, cross-user) | `backend/test/taskApi.test.js` |
-| **7** | Recorrido E2E (Complete task + Log out + Login screen) | `mobile/test/user_journey_test.dart` |
-| **8** | Particiones de Equivalencia y Límites (Password) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-8` |
-| **9** | Seguridad OWASP (Mass assignment en ownerId, SQLi, XSS) | `backend/test/taskApi.test.js` & `backend/src/db.js` |
-| **10** | Pruebas de Carga y Rendimiento (k6) | `backend/k6/health-test.js` |
-| **11** | Accesibilidad y Usabilidad (A11y, Semantics, Text scale) | `mobile/lib/main.dart` |
-| **12** | Matriz de Compatibilidad de Dispositivos y Tamaños | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-12` |
-| **13** | Checklist de Pruebas de Regresión | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-13` |
-| **14** | Pipeline de CI con GitHub Actions | `.github/workflows/tests.yml` |
-| **15** | Comparativa Mocks vs. Integración Real | `mobile/test/mock_vs_real_test.dart` & `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-15` |
+| # | Ejercicio del Documento | Ubicación en el Código / Documentación | Evidencia Visual |
+| :---: | :--- | :--- | :---: |
+| **1** | Criterios de Aceptación (Task creation) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-1` | [Ver guía](docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-1) |
+| **2** | Reporte de Bug (Tarea desaparece al completarse) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-2` | [Captura 08](docs/screenshots/08_mobile_tasks_completed.png) |
+| **3** | Pruebas Exploratorias con Charter (15 min) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-3` | [Captura 09](docs/screenshots/09_mobile_qa_exercises_lab.png) |
+| **4** | Pruebas Unitarias aisladas (Jest & Dart) | `backend/test/validation.test.js` & `mobile/test/task_model_test.dart` | [Captura 01](docs/screenshots/01_backend_tests_jest.png) / [02](docs/screenshots/02_frontend_tests_flutter.png) |
+| **5** | Botón Retry en Estado de Error (Flutter Widget) | `mobile/lib/task_list_panel.dart` & `mobile/test/task_list_panel_test.dart` | [Captura 12](docs/screenshots/12_mobile_error_retry_state.png) |
+| **6** | Pruebas API REST (Supertest: ID inválido, sin título, cross-user) | `backend/test/taskApi.test.js` | [Captura 01](docs/screenshots/01_backend_tests_jest.png) |
+| **7** | Recorrido E2E (Complete task + Log out + Login screen) | `mobile/test/user_journey_test.dart` | [Captura 02](docs/screenshots/02_frontend_tests_flutter.png) |
+| **8** | Particiones de Equivalencia y Límites (Password) | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-8` | [Ver tabla](docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-8) |
+| **9** | Seguridad OWASP (Mass assignment en ownerId, SQLi, XSS) | `backend/test/taskApi.test.js` & `backend/src/db.js` | [Captura 11](docs/screenshots/11_owasp_security_validation.png) |
+| **10** | Pruebas de Carga y Rendimiento (k6) | `backend/k6/health-test.js` | [Captura 10](docs/screenshots/10_k6_performance_load_test.png) |
+| **11** | Accesibilidad y Usabilidad (A11y, Semantics, Text scale) | `mobile/lib/main.dart` | [Captura 05](docs/screenshots/05_mobile_login_screen.png) |
+| **12** | Matriz de Compatibilidad de Dispositivos y Tamaños | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-12` | [Ver matriz](docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-12) |
+| **13** | Checklist de Pruebas de Regresión | `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-13` | [Ver checklist](docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-13) |
+| **14** | Pipeline de CI con GitHub Actions | `.github/workflows/tests.yml` | [Captura 04](docs/screenshots/04_ci_cd_pipeline_workflow.png) |
+| **15** | Comparativa Mocks vs. Integración Real | `mobile/test/mock_vs_real_test.dart` & `docs/EXERCISES_COMPREHENSIVE_GUIDE.md#ejercicio-15` | [Captura 02](docs/screenshots/02_frontend_tests_flutter.png) |
